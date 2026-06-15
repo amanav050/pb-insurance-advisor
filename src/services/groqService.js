@@ -115,11 +115,25 @@ After collecting all information, provide your recommendation in this EXACT stru
 - If the user seems to be in a very complex situation, recommend they speak with a human advisor.
 - Use Hinglish consistently in all responses — this is critical for user engagement.`;
 
+// User-friendly error messages — never expose raw API errors
+function getCleanError(status, apiMessage) {
+  if (status === 429 || (apiMessage && apiMessage.toLowerCase().includes('rate limit'))) {
+    return 'Our advisor is handling a lot of requests right now. Please wait a moment and try again.';
+  }
+  if (status === 401 || status === 403) {
+    return 'There was an authentication issue. Please try again later.';
+  }
+  if (status >= 500) {
+    return 'Our service is temporarily unavailable. Please try again in a few seconds.';
+  }
+  return 'Something went wrong. Please try again.';
+}
+
 export async function sendMessage(messageHistory, insuranceType) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
   if (!apiKey) {
-    throw new Error('Groq API key not found. Add VITE_GROQ_API_KEY to your .env file.');
+    throw new Error('Service is being configured. Please try again shortly.');
   }
 
   const systemMessage = {
@@ -127,24 +141,29 @@ export async function sendMessage(messageHistory, insuranceType) {
     content: `${SYSTEM_PROMPT}\n\nThe user has selected: ${insuranceType === 'health' ? 'Health Insurance' : 'Term Life Insurance'}. Begin the conversation by greeting them warmly in Hinglish and asking the FIRST question for this insurance type. Remember: ONE question at a time, always in Hinglish.`,
   };
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: [systemMessage, ...messageHistory],
-      temperature: 0.7,
-      max_tokens: 2048,
-      top_p: 0.9,
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [systemMessage, ...messageHistory],
+        temperature: 0.7,
+        max_tokens: 2048,
+        top_p: 0.9,
+      }),
+    });
+  } catch (networkError) {
+    throw new Error('Unable to connect. Please check your internet connection and try again.');
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Groq API error: ${response.status}`);
+    throw new Error(getCleanError(response.status, errorData.error?.message || ''));
   }
 
   const data = await response.json();
