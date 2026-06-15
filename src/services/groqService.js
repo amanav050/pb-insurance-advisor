@@ -116,24 +116,18 @@ After collecting all information, provide your recommendation in this EXACT stru
 - Use Hinglish consistently in all responses — this is critical for user engagement.`;
 
 export async function sendMessage(messageHistory, insuranceType) {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('Service is being configured. Please try again shortly.');
-  }
-
   const systemMessage = {
     role: 'system',
     content: `${SYSTEM_PROMPT}\n\nThe user has selected: ${insuranceType === 'health' ? 'Health Insurance' : 'Term Life Insurance'}. Begin the conversation by greeting them warmly in Hinglish and asking the FIRST question for this insurance type. Remember: ONE question at a time, always in Hinglish.`,
   };
 
   let response;
+
   try {
-    response = await fetch(GROQ_API_URL, {
+    response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: GROQ_MODEL,
@@ -144,24 +138,43 @@ export async function sendMessage(messageHistory, insuranceType) {
       }),
     });
   } catch (networkError) {
-    throw new Error('Unable to connect. Please check your internet connection and try again.');
+    throw new Error(
+      'Unable to connect. Please check your internet connection and try again.'
+    );
   }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const msg = errorData.error?.message || '';
-    if (response.status === 429 || msg.toLowerCase().includes('rate limit')) {
-      throw new Error('Our advisor is handling a lot of requests right now. Please wait a moment and try again.');
+
+    if (
+      response.status === 429 ||
+      msg.toLowerCase().includes('rate limit')
+    ) {
+      throw new Error(
+        'Our advisor is handling a lot of requests right now. Please wait a moment and try again.'
+      );
     }
+
     if (response.status === 401 || response.status === 403) {
-      throw new Error('There was an authentication issue. Please try again later.');
+      throw new Error(
+        'There was an authentication issue. Please try again later.'
+      );
     }
+
     if (response.status >= 500) {
-      throw new Error('Our service is temporarily unavailable. Please try again in a few seconds.');
+      throw new Error(
+        'Our service is temporarily unavailable. Please try again in a few seconds.'
+      );
     }
+
     throw new Error('Something went wrong. Please try again.');
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
+
+  return (
+    data.choices[0]?.message?.content ||
+    'Sorry, I could not generate a response. Please try again.'
+  );
 }
