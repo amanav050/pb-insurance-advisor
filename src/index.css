@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --pb-blue-primary: #2B3A8C;
+  --pb-blue-dark: #1A237E;
+  --pb-blue-light: #E8EAF6;
+  --pb-orange-cta: #F56B2A;
+  --pb-orange-hover: #E55A1B;
+  --pb-green-success: #4CAF50;
+  --pb-green-light: #E8F5E9;
+  --pb-white: #FFFFFF;
+  --pb-gray-bg: #F5F5F5;
+  --pb-gray-border: #E0E0E0;
+  --pb-gray-text: #616161;
+  --pb-text-primary: #212121;
+  --pb-text-dark: #333333;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  color: var(--pb-text-primary);
+  background: var(--pb-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Selection color */
+::selection {
+  background: var(--pb-blue-light);
+  color: var(--pb-blue-primary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pb-gray-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pb-gray-text);
+}
+
+/* Mobile input zoom prevention */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visible only for keyboard users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--pb-orange-cta);
+  outline-offset: 2px;
+}
