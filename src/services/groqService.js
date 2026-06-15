@@ -115,20 +115,6 @@ After collecting all information, provide your recommendation in this EXACT stru
 - If the user seems to be in a very complex situation, recommend they speak with a human advisor.
 - Use Hinglish consistently in all responses — this is critical for user engagement.`;
 
-// User-friendly error messages — never expose raw API errors
-function getCleanError(status, apiMessage) {
-  if (status === 429 || (apiMessage && apiMessage.toLowerCase().includes('rate limit'))) {
-    return 'Our advisor is handling a lot of requests right now. Please wait a moment and try again.';
-  }
-  if (status === 401 || status === 403) {
-    return 'There was an authentication issue. Please try again later.';
-  }
-  if (status >= 500) {
-    return 'Our service is temporarily unavailable. Please try again in a few seconds.';
-  }
-  return 'Something went wrong. Please try again.';
-}
-
 export async function sendMessage(messageHistory, insuranceType) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -163,7 +149,17 @@ export async function sendMessage(messageHistory, insuranceType) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(getCleanError(response.status, errorData.error?.message || ''));
+    const msg = errorData.error?.message || '';
+    if (response.status === 429 || msg.toLowerCase().includes('rate limit')) {
+      throw new Error('Our advisor is handling a lot of requests right now. Please wait a moment and try again.');
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('There was an authentication issue. Please try again later.');
+    }
+    if (response.status >= 500) {
+      throw new Error('Our service is temporarily unavailable. Please try again in a few seconds.');
+    }
+    throw new Error('Something went wrong. Please try again.');
   }
 
   const data = await response.json();
